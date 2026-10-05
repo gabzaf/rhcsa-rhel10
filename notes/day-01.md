@@ -179,3 +179,57 @@ Using RHEL in cloud is different. In cloud RHEL is deployed, not installed. The 
 
 ![Lesson 2 lab: Installing Red Hat Enterprise Linux](images/day-01-lesson-2-lab.png)
 
+![Installation Destination with Custom storage configuration](images/day-01-installation-destination-custom.png)
+
+Click **Done**. After clicking **Done**, a second page opened.
+
+![Anaconda "Manual Partitioning" screen](images/day-01-manual-partitioning.png)
+
+Select **Standard Partition** and click **+**.
+
+![Anaconda "Add a New Mount Point" dialog](images/day-01-add-mount-point.png)
+
+Click **Add mount point**.
+
+![Root partition (/) created: 10 GiB, Standard Partition, xfs](images/day-01-root-partition.png)
+
+![Swap partition created: 1024 MiB, Standard Partition](images/day-01-swap-partition.png)
+
+![Summary of changes: no boot partition](images/day-01-summary-of-changes.png)
+
+**What's wrong:** the summary only creates `/` (`sda1`) and swap (`sda2`) on a new GPT partition table. A GPT disk also needs a small partition for the boot loader, otherwise the system won't boot. The lab doesn't list it because it's a technical requirement, not a lab task. Adding it doesn't break the lab: root stays 10 GiB, swap 1 GiB, and over 4 GiB stays unused.
+
+Which partition depends on the VM firmware:
+
+- **BIOS** (VirtualBox default): a `biosboot` partition of 1 MiB
+- **UEFI**: a `/boot/efi` partition of about 600 MiB
+
+Check the firmware from the host:
+
+```bash
+VBoxManage showvminfo rhel10 --machinereadable | grep -i '^firmware='
+```
+
+```
+firmware="BIOS"
+```
+
+Fix: click **Cancel & Return to Custom Partitioning**, then click **+** to add the boot partition.
+
+![Adding the boot partition](images/day-01-add-boot-partition.png)
+
+The mount point must be `biosboot`, not `/boot`. `/boot` holds the kernel and needs about 1 GiB; `biosboot` is the 1 MiB partition the boot loader needs on a BIOS VM. If it's not in the dropdown, type it.
+
+![Adding the biosboot partition: 1M](images/day-01-add-biosboot.png)
+
+Final partition layout:
+
+![Final partition layout: BIOS Boot, root and swap](images/day-01-partition-layout.png)
+
+| Partition | Mount point | Size | File system |
+|-----------|-------------|------|-------------|
+| `sda1`    | BIOS Boot   | 1 MiB | — |
+| `sda2`    | `/`         | 10 GiB | xfs |
+| `sda3`    | swap        | 1 GiB | swap |
+
+The installer puts BIOS Boot first as `sda1`, so the other partitions move to `sda2` and `sda3`. 9 GiB stays unused, so the lab's "at least 4 GiB unused" requirement is met.
