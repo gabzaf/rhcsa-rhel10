@@ -220,6 +220,8 @@ Fix: click **Cancel & Return to Custom Partitioning**, then click **+** to add t
 
 The mount point must be `biosboot`, not `/boot`. `/boot` holds the kernel and needs about 1 GiB; `biosboot` is the 1 MiB partition the boot loader needs on a BIOS VM. If it's not in the dropdown, type it.
 
+Alternative (used in the course, on a UEFI VM): mount point `/boot/efi` with `600M`.
+
 ![Adding the biosboot partition: 1M](images/day-01-add-biosboot.png)
 
 Final partition layout:
