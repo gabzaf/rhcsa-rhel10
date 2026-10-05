@@ -149,7 +149,9 @@ tail -f ~/"VirtualBox VMs"/rhel10/Logs/VBox.log
 
 When **Reboot System** becomes clickable, the install is done. Eject the ISO first (Devices → Optical Drives) so the VM boots from disk.
 
-#### Storage
+A system message appeared asking for registration. I'm not doing it because registering the system requires internet access, and in the exam I won't have internet access. I will need an alternative way to set up a system.
+
+#### Using Custom Partitioning
 
 Linux servers use multiple storage volumes:
 
@@ -168,3 +170,12 @@ Other data that is often organized on dedicated partitions:
 - User home directories
 - Server document roots
 - Container images, and more
+
+#### Using RHEL in Cloud
+
+Using RHEL in cloud is different. In cloud RHEL is deployed, not installed. The cloud provides the boot procedure, not Linux.
+
+---
+
+![Lesson 2 lab: Installing Red Hat Enterprise Linux](images/day-01-lesson-2-lab.png)
+
