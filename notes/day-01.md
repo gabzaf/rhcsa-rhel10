@@ -271,3 +271,48 @@ nmcli connection show enp0s3 | grep -E 'ipv4.method|autoconnect'
 ```
 
 `ipv4.method: auto` means DHCP, and `connection.autoconnect: yes` means it comes up on boot.
+
+## Module 2: Basic Tasks
+
+### Virtual terminals
+
+Virtual terminals start additional terminal sessions. Switch to them with **Ctrl+Alt+Fn** (from a graphical session) or **Alt+Fn** (from a text console), where *n* is the terminal number.
+
+To see which users are logged in and on which terminals, use `who` or `w`:
+
+```bash
+who
+w
+```
+- `who`: users, their terminal (`tty1`, `pts/0`…) and login time
+- `w`: the same, plus idle time, load average and what each user is running
+
+Example:
+
+1. In the GUI terminal, switch to tty3:
+
+   ```bash
+   sudo chvt 3
+   ```
+
+2. On tty3, log in as `student` and run:
+
+   ```bash
+   w
+   ```
+
+![Logged in on tty3 and running w](images/day-01-chvt-w.png)
+
+- `tty2`: the graphical session (`gnome-session-binary`), logged in at 15:17
+- `tty3`: the new text login opened with `chvt 3`, running `w`
+
+To get back to the GUI from tty3, run `chvt 2`.
+
+In console-only mode (no GUI), use one virtual terminal to test things and another to keep a log open. Switch between them with **Ctrl+Alt+Fn**.
+
+After `chvt 2`, running `w` again from the GUI:
+
+![w after switching back to tty2](images/day-01-w-after-chvt-2.png)
+
+The tty3 session is still open: it's idle (`1:43`) and just waiting at the `-bash` prompt. Switching terminals doesn't log out; use `exit` on tty3 to close it.
+
