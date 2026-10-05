@@ -342,3 +342,59 @@ Open `https://localhost:9090` in the VM's browser and log in as `student`:
 - It starts in **Limited access** mode. Click **Turn on administrative access** (with your password) to make changes as an admin.
 
 > ⚠️ It is not recommended to use Cockpit for the entirety of the RHCSA. Learn to do every task from the command line.
+
+### man pages
+
+Use man pages for help on commands, and search inside them with `/`:
+
+```bash
+man chvt
+```
+
+- `/word`: search for *word* (Enter to run the search)
+- `n` / `N`: next / previous match
+- `G` (uppercase): go all the way to the end
+- `q`: quit
+
+Each man section has an intro page. Use `man n intro`, where *n* is the section number:
+
+```bash
+man 1 intro
+```
+
+- `1`: user commands
+- `5`: file formats and configuration files
+- `8`: system administration commands
+
+Search all man pages by keyword (in names and short descriptions):
+
+```bash
+man -k <keyword>
+```
+
+On a fresh install it may find nothing:
+
+```
+$ man -k user
+user: nothing appropriate
+```
+
+The man page database (`mandb`) is built by a scheduled task, which hadn't run yet. Build it manually, then search again:
+
+```bash
+sudo mandb
+```
+
+`man -k user` returns a lot of results. Count them (the first number is the line count, about 70 here):
+
+```bash
+man -k user | wc
+```
+
+Filter to section 1 (user commands):
+
+```bash
+man -k user | grep 1
+```
+
+`grep 1` matches a `1` anywhere in the line. To match only the section, use `grep '(1)'` or `man -k -s 1 user`.
