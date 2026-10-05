@@ -316,3 +316,29 @@ After `chvt 2`, running `w` again from the GUI:
 
 The tty3 session is still open: it's idle (`1:43`) and just waiting at the `-bash` prompt. Switching terminals doesn't log out; use `exit` on tty3 to close it.
 
+To close the tty3 session from tty2, find its session ID (the row with `tty3` in the TTY column) and terminate it:
+
+```bash
+loginctl list-sessions
+loginctl terminate-session <ID>
+```
+
+No `sudo` is needed for your own sessions. Run `w` to check that tty3 is gone.
+
+### Cockpit
+
+Cockpit is a web console for managing the system from a browser.
+
+I enter on cockpit using `localhost:9090` on the web browser.
+
+
+
+Open `https://localhost:9090` in the VM's browser and log in as `student`:
+
+![Cockpit overview page](images/day-01-cockpit-overview.png)
+
+- The **Overview** page shows health, CPU and memory usage, system information and configuration (host name, time, performance profile).
+- The menu on the left manages logs, storage, networking, accounts, services, SELinux and more.
+- It starts in **Limited access** mode. Click **Turn on administrative access** (with your password) to make changes as an admin.
+
+> ⚠️ It is not recommended to use Cockpit for the entirety of the RHCSA. Learn to do every task from the command line.
