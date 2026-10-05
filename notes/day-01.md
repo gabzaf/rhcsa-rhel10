@@ -233,3 +233,39 @@ Final partition layout:
 | `sda3`    | swap        | 1 GiB | swap |
 
 The installer puts BIOS Boot first as `sda1`, so the other partitions move to `sda2` and `sda3`. 9 GiB stays unused, so the lab's "at least 4 GiB unused" requirement is met.
+
+![Summary of changes with the BIOS Boot partition](images/day-01-summary-of-changes-fixed.png)
+
+Nothing wrong: click **Accept Changes**.
+
+Set the root password (lab requirement): select **Enable root account** and enter the password. It fails the dictionary check, so press **Done** twice.
+
+![Root account enabled with the lab password](images/day-01-lab-root-account.png)
+
+Create the user `student` (lab requirement). The weak password needs **Done** twice too.
+
+![Creating the student user](images/day-01-lab-create-student.png)
+
+Configure the network interface to use DHCP (lab requirement). DHCP is the default, so turn the interface **ON**. It shows **Connected** with an IPv4 address from the VirtualBox DHCP server:
+
+![Network interface on and connected](images/day-01-lab-network-on.png)
+
+Click **Configure…** and check that the interface comes up on every boot. On the **General** tab, **Connect automatically with priority** is checked:
+
+![General tab: connect automatically](images/day-01-lab-network-general.png)
+
+On the **IPv4 Settings** tab, **Method** is **Automatic (DHCP)**. Click **Save**.
+
+![IPv4 Settings tab: Automatic (DHCP)](images/day-01-lab-network-ipv4.png)
+
+Set the host name to `rhcsa` and click **Apply**. "Current host name" changes from `vbox` only after **Apply**.
+
+![Host name rhcsa](images/day-01-lab-hostname.png)
+
+After the first boot, check DHCP from the terminal:
+
+```bash
+nmcli connection show enp0s3 | grep -E 'ipv4.method|autoconnect'
+```
+
+`ipv4.method: auto` means DHCP, and `connection.autoconnect: yes` means it comes up on boot.
