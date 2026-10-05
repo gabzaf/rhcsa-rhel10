@@ -83,6 +83,25 @@ A user account must be created during installation.
 
 After creating an admin user, the root account warning on the summary screen disappeared: an admin (wheel) user is enough, so root can stay disabled.
 
+#### Installation destination
+
+![Anaconda "Installation Destination" screen](images/day-01-installation-destination.png)
+
+- **Local Standard Disks:** the 20 GiB VirtualBox disk (`sda`) is selected.
+- **Storage Configuration:** Automatic. The installer creates the partition layout itself.
+- **Encryption:** unchecked.
+- Nothing is written to disk until you click **Begin Installation**.
+
+#### Network and host name
+
+![Anaconda "Network & Host Name" screen](images/day-01-network-hostname.png)
+
+- **Ethernet (`enp0s3`):** switched on, so the VM gets an address from VirtualBox NAT.
+  - IPv4: `10.0.2.15/24`
+  - Default route: `10.0.2.2`
+  - DNS: `10.0.2.3`
+- **Host name:** `rhcsa`. Click **Apply**, or "Current host name" keeps showing `vbox`.
+
 #### Storage
 
 Linux servers use multiple storage volumes:
