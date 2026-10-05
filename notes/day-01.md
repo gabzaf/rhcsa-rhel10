@@ -102,6 +102,53 @@ After creating an admin user, the root account warning on the summary screen dis
   - DNS: `10.0.2.3`
 - **Host name:** `rhcsa`. Click **Apply**, or "Current host name" keeps showing `vbox`.
 
+#### Track the installation from the host
+
+The VM is called `rhel10`. These commands run on the host, not inside the VM.
+
+**Watch the disk grow.** The disk is dynamically allocated, so the `.vdi` file grows as packages are written. When it stops growing, the install is nearly done.
+
+```bash
+watch -n5 'ls -lh ~/"VirtualBox VMs"/rhel10/rhel10.vdi'
+```
+
+```
+-rw------- 1 user user 3.3G ... ~/VirtualBox VMs/rhel10/rhel10.vdi
+```
+
+**Check that the VM is running:**
+
+```bash
+VBoxManage showvminfo rhel10 --machinereadable | grep VMState=
+```
+
+```
+VMState="running"
+```
+
+**Take a screenshot of the VM screen** to see the progress without switching windows:
+
+```bash
+VBoxManage controlvm rhel10 screenshotpng ~/rhel10-screen.png && xdg-open ~/rhel10-screen.png
+```
+
+![Installation progress screenshot](images/day-01-installation-progress.png)
+
+It was installing package 1121 of 1257. The progress bar looks almost empty because it also covers the steps after the packages (bootloader, initramfs, SELinux relabel).
+
+**Follow the VirtualBox log** for the VM:
+
+```bash
+tail -f ~/"VirtualBox VMs"/rhel10/Logs/VBox.log
+```
+
+```
+00:20:52.476520 GUI: UIMachineViewNormal::resendSizeHint: Restoring guest size-hint for screen 0 to 800x600
+00:52:23.700496 AsyncCompletion: Task 0x007fa40f0d9dc0 completed after 16 seconds
+```
+
+When **Reboot System** becomes clickable, the install is done. Eject the ISO first (Devices → Optical Drives) so the VM boots from disk.
+
 #### Storage
 
 Linux servers use multiple storage volumes:
