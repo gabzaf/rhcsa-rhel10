@@ -583,14 +583,14 @@ history -d <lineNumber>
 
 #### Task 1: Set the variable color to red at every login
 
-Set the variable permanently. Add it to `~/.bashrc`, then load it into the current shell:
+Set the variable permanently. Add it to `~/.bash_profile` (runs at login), then load it into the current shell:
 
 ```bash
-echo 'export color=red' >> ~/.bashrc
+echo 'export color=red' >> ~/.bash_profile
 ```
 
 ```bash
-source ~/.bashrc
+source ~/.bash_profile
 ```
 
 Check it:
@@ -598,6 +598,13 @@ Check it:
 ```bash
 echo $color
 ```
+
+| File | When it runs | Typically used for |
+|------|--------------|--------------------|
+| `~/.bash_profile` | Once, at **login** (tty, SSH, `su -`) | **Variables** (`export`): inherited by every program started from the session |
+| `~/.bashrc` | Every new **interactive shell** (e.g. each terminal window) | **Aliases** and functions: not inherited, so they must be set in every shell |
+
+The task says "every time your current user account **logs in**", which matches `~/.bash_profile`. On RHEL, `~/.bash_profile` also loads `~/.bashrc`, so a variable in `~/.bashrc` works too. Convention: variables in `~/.bash_profile`, aliases in `~/.bashrc`.
 
 #### Task 2: Create the alias dir that runs ls -ltr
 
@@ -621,10 +628,9 @@ It prints `alias dir='ls -ltr'`. Running `dir` lists files with the newest at th
 
 #### Task 3: History file up to 2500 entries
 
-Set both variables in `~/.bashrc`, then reload:
+The course solution sets only `HISTFILESIZE` (the task says "history **file**"):
 
 ```bash
-echo 'HISTSIZE=2500' >> ~/.bashrc
 echo 'HISTFILESIZE=2500' >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -634,12 +640,14 @@ source ~/.bashrc
 | `HISTFILESIZE` | max entries (lines) in the history **file**, `~/.bash_history`: what the task asks for |
 | `HISTSIZE` | max entries (commands) in **memory** for the session (RHEL default: 1000) |
 
-Each command is one line in the file, so entries = lines. The file is written from memory at logout, so if `HISTSIZE` stays at 1000, the file never grows past 1000. Set both.
+Each command is one line in the file, so entries = lines.
+
+> Note: the file is written from memory at logout, so with `HISTSIZE` at 1000 the file won't actually grow past 1000. To make it really reach 2500, also add `echo 'HISTSIZE=2500' >> ~/.bashrc`.
 
 Check it:
 
 ```bash
-echo $HISTSIZE $HISTFILESIZE
+echo $HISTFILESIZE
 ```
 
-It prints `2500 2500`. `echo $VAR` reads a variable; `VAR=value` sets it (no `$`, no spaces around `=`).
+It prints `2500`. `echo $VAR` reads a variable; `VAR=value` sets it (no `$`, no spaces around `=`).
