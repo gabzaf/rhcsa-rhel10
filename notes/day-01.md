@@ -2,6 +2,28 @@
 
 **Course:** [Red Hat RHCSA RHEL 10 with Exam Labs](https://learning.oreilly.com/course/red-hat-rhcsa/9780135493137/) by Sander van Vugt (Pearson, O'Reilly Learning)
 
+## Contents
+
+- [Module 1: Performing Basic System Management Tasks](#module-1-performing-basic-system-management-tasks)
+  - [Lesson 1: Understanding RHEL](#lesson-1-understanding-rhel)
+  - [Lesson 2: Installing RHEL Server](#lesson-2-installing-rhel-server)
+    - [Planning the installation](#planning-the-installation)
+    - [Check CPU support](#check-cpu-support)
+    - [Download and verify the RHEL 10 ISO](#download-and-verify-the-rhel-10-iso)
+    - [Create the VM](#create-the-vm)
+    - [Installer configuration](#installer-configuration)
+    - [Create the user](#create-the-user)
+    - [Installation destination](#installation-destination)
+    - [Network and host name](#network-and-host-name)
+    - [Track the installation from the host](#track-the-installation-from-the-host)
+    - [Using Custom Partitioning](#using-custom-partitioning)
+    - [Using RHEL in Cloud](#using-rhel-in-cloud)
+- [Module 2: Basic Tasks](#module-2-basic-tasks)
+  - [Virtual terminals](#virtual-terminals)
+  - [Cockpit](#cockpit)
+  - [man pages](#man-pages)
+  - [Lightspeed](#lightspeed)
+
 ---
 
 ## Module 1: Performing Basic System Management Tasks
@@ -398,3 +420,16 @@ man -k user | grep 1
 ```
 
 `grep 1` matches a `1` anywhere in the line. To match only the section, use `grep '(1)'` or `man -k -s 1 user`.
+
+### Lightspeed
+
+RHEL Lightspeed is a new feature in RHEL 10: an AI command-line assistant. It's completely useless for the RHCSA exam, since it needs internet access and a registered system, and the exam has neither.
+
+Trying to install it on the unregistered VM:
+
+```
+$ sudo dnf install command-line-assistant
+This system is not registered with an entitlement server. You can use "rhc" or "subscription-manager" to register.
+```
+
+An unregistered system has no access to Red Hat's online repositories, so `dnf` can't find the package. Even if installed, Lightspeed only works on a registered system with internet access. To install packages without registering, set up the RHEL ISO as a local repository (an RHCSA objective).
