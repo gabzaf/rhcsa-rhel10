@@ -8,6 +8,7 @@
   - [FHS (Filesystem Hierarchy Standard)](#fhs-filesystem-hierarchy-standard)
   - [Finding files](#finding-files)
   - [Mounts and devices](#mounts-and-devices)
+  - [Links](#links)
 
 ---
 
@@ -136,3 +137,7 @@ findmnt --real         # tree without virtual file systems
 findmnt /              # what's mounted at one place
 df -h                  # sizes and free space
 ```
+
+### Links
+
+![Understanding Links](images/day-02-understanding-links.png)
