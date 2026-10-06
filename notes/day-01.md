@@ -23,6 +23,11 @@
   - [Cockpit](#cockpit)
   - [man pages](#man-pages)
   - [Lightspeed](#lightspeed)
+  - [Lesson 4 lab: Using Essential Tools](#lesson-4-lab-using-essential-tools)
+    - [Task 1: Locate the man page that shows how to set a password](#task-1-locate-the-man-page-that-shows-how-to-set-a-password)
+    - [Task 2: Use the man page for useradd and create the user anna](#task-2-use-the-man-page-for-useradd-and-create-the-user-anna)
+    - [Task 3: Set the password for user anna](#task-3-set-the-password-for-user-anna)
+    - [Task 4: Use vim to create the file users](#task-4-use-vim-to-create-the-file-users)
 
 ---
 
@@ -433,3 +438,112 @@ This system is not registered with an entitlement server. You can use "rhc" or "
 ```
 
 An unregistered system has no access to Red Hat's online repositories, so `dnf` can't find the package. Even if installed, Lightspeed only works on a registered system with internet access. To install packages without registering, set up the RHEL ISO as a local repository (an RHCSA objective).
+
+### Lesson 4 lab: Using Essential Tools
+
+![Lesson 4 lab: Using Essential Tools](images/day-01-lesson-4-lab.png)
+
+#### Task 1: Locate the man page that shows how to set a password
+
+`man -k password` returns too many lines:
+
+```
+$ man -k password | wc
+     71     620    4346
+```
+
+Filter to section 1 (user commands):
+
+```
+$ man -k password | grep 1
+apg (1)              - generates several random passwords
+chage (1)            - change user password expiry information
+expiry (1)           - check and enforce password expiration policy
+git-credential-cache (1) - Helper to temporarily store passwords in memory
+grub-mkpasswd-pbkdf2 (1) - generate hashed password for GRUB
+htdbm (1)            - Manipulate DBM password databases
+openssl-passwd (1ssl) - compute password hashes
+openssl-srp (1ssl)   - maintain SRP password file
+passwd (1)           - change user password
+seahorse (1)         - Passwords and Keys
+systemd-ask-password (1) - Query the user for a system password
+systemd-tty-ask-password-agent (1) - List or process pending systemd password requests
+```
+
+The answer is `passwd (1) - change user password`. Open it:
+
+```bash
+man passwd
+```
+
+```
+PASSWD(1)                    User Commands                    PASSWD(1)
+
+NAME
+       passwd - change user password
+```
+
+#### Task 2: Use the man page for useradd and create the user anna
+
+```bash
+man useradd
+sudo useradd anna
+```
+
+Check that the user exists:
+
+```bash
+cat /etc/passwd
+id anna
+```
+
+- `cat /etc/passwd`: lists all local users, one per line. `anna` is the last line.
+- `id anna`: shows anna's UID, GID and groups, or `no such user` if it doesn't exist.
+
+Fields in an `/etc/passwd` line: name, password placeholder (`x`), UID, GID, comment, home directory, shell. Regular users have UID 1000 or higher.
+
+#### Task 3: Set the password for user anna
+
+![Setting anna's password](images/day-01-lesson-4-passwd-anna.png)
+
+What happened:
+
+1. `passwd anna | password` without `sudo` failed: only root can change another user's password.
+2. `sudo passwd anna | password` worked, but only because `passwd` asked for the password interactively. The `| password` part is wrong: it pipes the output to a command called `password`, which doesn't exist (`command not found`).
+3. The password fails the dictionary check (`BAD PASSWORD`), but root can set it anyway.
+
+Correct way:
+
+```bash
+sudo passwd anna
+```
+
+Type the password twice when prompted.
+
+Non-interactive alternative (RHEL), useful in scripts:
+
+```bash
+echo password | sudo passwd --stdin anna
+```
+
+Verify the password by logging in as anna:
+
+```bash
+su - anna
+```
+
+![su - anna: login works](images/day-01-lesson-4-su-anna.png)
+
+The prompt changes to `anna@rhcsa`, so the password is correct. Type `exit` to go back. A wrong password gives `su: Authentication failure`.
+
+#### Task 4: Use vim to create the file users
+
+```bash
+vim users
+```
+
+In vim: press `i` to insert, type one name per line, press `Esc`, then `:wq` to save and quit. Check the file with `cat`:
+
+![vim users and cat users](images/day-01-lesson-4-vim-users.png)
+
+The file contains alex, alexander, linda and belinda on separate lines.
