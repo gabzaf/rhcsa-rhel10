@@ -30,6 +30,10 @@
     - [Task 4: Use vim to create the file users](#task-4-use-vim-to-create-the-file-users)
   - [Redirecting and piping](#redirecting-and-piping)
   - [history](#history)
+  - [Lesson 5 lab: Using the Bash Shell](#lesson-5-lab-using-the-bash-shell)
+    - [Task 1: Set the variable color to red at every login](#task-1-set-the-variable-color-to-red-at-every-login)
+    - [Task 2: Create the alias dir that runs ls -ltr](#task-2-create-the-alias-dir-that-runs-ls--ltr)
+    - [Task 3: History file up to 2500 entries](#task-3-history-file-up-to-2500-entries)
 
 ---
 
@@ -572,3 +576,70 @@ history -d <lineNumber>
 ```
 
 `history -d` only removes it from memory. If the history was already written to `~/.bash_history`, run `history -w` afterwards to overwrite the file too.
+
+### Lesson 5 lab: Using the Bash Shell
+
+![Lesson 5 lab: Using the Bash Shell](images/day-01-lesson-5-lab.png)
+
+#### Task 1: Set the variable color to red at every login
+
+Set the variable permanently. Add it to `~/.bashrc`, then load it into the current shell:
+
+```bash
+echo 'export color=red' >> ~/.bashrc
+```
+
+```bash
+source ~/.bashrc
+```
+
+Check it:
+
+```bash
+echo $color
+```
+
+#### Task 2: Create the alias dir that runs ls -ltr
+
+Typing `alias dir='ls -ltr'` only sets the alias in the current shell; it's lost at logout. Add it to `~/.bashrc` (double quotes outside, because the alias contains single quotes), then reload:
+
+```bash
+echo "alias dir='ls -ltr'" >> ~/.bashrc
+```
+
+```bash
+source ~/.bashrc
+```
+
+Check it:
+
+```bash
+alias dir
+```
+
+It prints `alias dir='ls -ltr'`. Running `dir` lists files with the newest at the bottom.
+
+#### Task 3: History file up to 2500 entries
+
+Set both variables in `~/.bashrc`, then reload:
+
+```bash
+echo 'HISTSIZE=2500' >> ~/.bashrc
+echo 'HISTFILESIZE=2500' >> ~/.bashrc
+source ~/.bashrc
+```
+
+| Variable | Controls |
+|----------|----------|
+| `HISTFILESIZE` | max entries (lines) in the history **file**, `~/.bash_history`: what the task asks for |
+| `HISTSIZE` | max entries (commands) in **memory** for the session (RHEL default: 1000) |
+
+Each command is one line in the file, so entries = lines. The file is written from memory at logout, so if `HISTSIZE` stays at 1000, the file never grows past 1000. Set both.
+
+Check it:
+
+```bash
+echo $HISTSIZE $HISTFILESIZE
+```
+
+It prints `2500 2500`. `echo $VAR` reads a variable; `VAR=value` sets it (no `$`, no spaces around `=`).
