@@ -28,6 +28,8 @@
     - [Task 2: Use the man page for useradd and create the user anna](#task-2-use-the-man-page-for-useradd-and-create-the-user-anna)
     - [Task 3: Set the password for user anna](#task-3-set-the-password-for-user-anna)
     - [Task 4: Use vim to create the file users](#task-4-use-vim-to-create-the-file-users)
+  - [Redirecting and piping](#redirecting-and-piping)
+  - [history](#history)
 
 ---
 
@@ -547,3 +549,26 @@ In vim: press `i` to insert, type one name per line, press `Esc`, then `:wq` to 
 ![vim users and cat users](images/day-01-lesson-4-vim-users.png)
 
 The file contains alex, alexander, linda and belinda on separate lines.
+
+### Redirecting and piping
+
+![Understanding Redirecting and Piping](images/day-01-redirecting-piping.png)
+
+### history
+
+Write the current history from memory to the history file (`~/.bash_history`):
+
+```bash
+history -w
+```
+
+Bash normally writes the history file only when the shell exits. If the system crashes, the history isn't saved. Run `history -w` before a command that might crash the system.
+
+If you accidentally type your password at the prompt, it's saved in the history. Find its line number with `history`, then delete that line:
+
+```bash
+history
+history -d <lineNumber>
+```
+
+`history -d` only removes it from memory. If the history was already written to `~/.bash_history`, run `history -w` afterwards to overwrite the file too.
