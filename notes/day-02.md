@@ -9,6 +9,10 @@
   - [Finding files](#finding-files)
   - [Mounts and devices](#mounts-and-devices)
   - [Links](#links)
+    - [ln](#ln)
+  - [Lesson 6 lab: Using Essential File Management Tools](#lesson-6-lab-using-essential-file-management-tools)
+    - [Task 1: Compressed archive of /etc and /opt in the home directory](#task-1-compressed-archive-of-etc-and-opt-in-the-home-directory)
+    - [Task 2: Symbolic link to the archive in /tmp](#task-2-symbolic-link-to-the-archive-in-tmp)
 
 ---
 
@@ -141,3 +145,92 @@ df -h                  # sizes and free space
 ### Links
 
 ![Understanding Links](images/day-02-understanding-links.png)
+
+How links work:
+
+```
+name (in a directory) ──► inode ──► blocks (data on disk)
+symlink ──► name ──► inode ──► blocks
+```
+
+- **Blocks**: where the file's data is physically stored.
+- **Inode**: holds all the file's properties (owner, permissions, size, timestamps) and points to its blocks. Every file has exactly one inode.
+- **Name**: how you reach the inode. Names are stored in directory tables.
+- **Hard link**: an extra name pointing to the same inode. Every name is a hard link, so a file can have several.
+  - Must be on the same file system (device), because each file system has its own inodes.
+  - Can't be made for directories.
+- **Symbolic link (symlink)**: points to a name, not to an inode. More flexible: it works across file systems and for directories.
+
+| | Hard link | Symbolic link |
+|---|---|---|
+| Points to | inode | name (path) |
+| Across file systems | no | yes |
+| Directories | no | yes |
+| Create with | `ln target link` | `ln -s target link` |
+
+If the name a symlink points to is removed, the symlink becomes invalid (a *broken* or *dangling* link): it still exists but points to nothing. `ls -l` usually shows it in red.
+
+Hard links don't have this problem: removing one name leaves the others working. The data is only deleted when the last name (hard link) to the inode is removed.
+
+Show a file's inode number with `ls -i`:
+
+```bash
+ls -i /etc/hosts
+```
+
+The output is the inode number followed by the name. Hard links to the same file show the same inode number.
+
+#### ln
+
+`ln` creates links. The order is always **target first, then the new link name**:
+
+```bash
+ln <target> <link>      # hard link
+ln -s <target> <link>   # symbolic link
+```
+
+Example in your home directory:
+
+```bash
+ln -s /etc/hosts symhosts    # symbolic link to /etc/hosts
+touch file1
+ln file1 file2               # works: same file system
+ls -li file1 file2 symhosts
+```
+
+- `file1` and `file2` show the **same inode number**, and the link count (the number after the permissions) is **2**.
+- `symhosts` shows `l` at the start of the permissions and `symhosts -> /etc/hosts`: it has its own inode and only stores the path.
+- Removing `file1` leaves `file2` working. Removing `/etc/hosts` would break `symhosts`.
+
+A hard link to a file on another file system fails with `Invalid cross-device link`. As a regular user, a hard link to a file you don't own (like `/etc/hosts`) fails with `Operation not permitted`, a security protection.
+
+Use an absolute path for the target of a symlink. A relative target is resolved from the link's location, not from where you ran `ln`.
+
+### Lesson 6 lab: Using Essential File Management Tools
+
+![Lesson 6 lab: Using Essential File Management Tools](images/day-02-lesson-6-lab.png)
+
+#### Task 1: Compressed archive of /etc and /opt in the home directory
+
+One archive with both directories, compressed with gzip:
+
+```bash
+tar -czf /root/etc-opt.tar.gz /etc /opt
+```
+Verify:
+
+```bash
+tar tvf etc-opt.tar.gz
+```
+
+#### Task 2: Symbolic link to the archive in /tmp
+
+```bash
+ln -s /root/etc-opt.tar.gz /tmp/etc-opt.tar.gz
+ls -l /tmp/rtc-opt.tar.gz
+```
+
+#### Task 3
+```bash
+rm etc-opt.tar.gz
+```
