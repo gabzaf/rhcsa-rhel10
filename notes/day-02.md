@@ -34,6 +34,13 @@
     - [sudo with composed commands](#sudo-with-composed-commands)
   - [SSH](#ssh)
   - [Lesson 8 lab: Configuring sudo](#lesson-8-lab-configuring-sudo)
+  - [Users](#users)
+    - [/etc/shadow](#etcshadow)
+    - [User default settings](#user-default-settings)
+    - [Limiting user access](#limiting-user-access)
+  - [Groups](#groups)
+  - [Password settings](#password-settings)
+  - [Lesson 9 lab: Managing Users and Groups](#lesson-9-lab-managing-users-and-groups)
 
 ---
 
@@ -628,29 +635,6 @@ The remote side is written `user@host:path`.
 
 ![Lesson 8 lab: Configuring sudo](images/day-02-lesson-8-lab.png)
 
-My way:
-
-```
-sudo useradd linda
-sudo visudo
-linda ALL=/user/sbin/useradd, /user/sbin/usermod, /user/sbin/userdel, /user/bin/passwd, ! /user/bin/passwd
-Defaults timestamps_type=global,timestamp_timeout=60
-root
-sudo -i
-passwd linda
-exit
-su - linda
-sudo useradd johane
-```
-
-Mistakes:
-
-- `/user/...` should be `/usr/...`. sudo matches the full path exactly, so none of the rules match and `sudo useradd johane` is refused. Check paths with `which useradd`.
-- `timestamps_type` should be `timestamp_type`. `visudo` rejects unknown settings with a syntax error.
-- `root` must be on the same line: `! /usr/bin/passwd root`. On its own line it's a syntax error, and `! /usr/bin/passwd` alone blocks every use of `passwd`.
-
-Correct solution, in a drop-in file:
-
 ```bash
 sudo useradd linda
 sudo passwd linda
@@ -672,3 +656,142 @@ sudo passwd root        # refused
 ```
 
 `sudo passwd linda` does the same as `sudo -i`, `passwd linda`, `exit` in one command.
+
+### Users
+
+A user is a security principle: user accounts are used to give people or processes access to system resources.
+
+- Processes use **system accounts** (UID below 1000, e.g. `sshd`, `chrony`).
+- People use **regular user accounts** (UID 1000 and higher, e.g. `anna`, `linda`).
+
+![User Properties](images/day-02-user-properties.png)
+
+The slide's properties are the same seven fields as a line in `/etc/passwd`, in the same order:
+
+```
+anna:x:1002:1002::/home/anna:/bin/bash
+name:password:UID:GID:GECOS:home:shell
+```
+
+The password field shows `x` because the real (hashed) password is kept in `/etc/shadow`, which only root can read.
+
+#### /etc/shadow
+
+```bash
+sudo tail -5 /etc/shadow
+```
+
+![sudo tail -5 /etc/shadow](images/day-02-etc-shadow.png)
+
+Each line has 9 fields separated by `:`:
+
+```
+anna:$y$j9T$...:20732:0:99999:7:::
+name:hash:lastchg:min:max:warn:inactive:expire:reserved
+```
+
+| Field | Example | Meaning |
+|-------|---------|---------|
+| name | `anna` | the account |
+| hash | `$y$j9T$...` | hashed password (`$y$` = yescrypt) |
+| lastchg | `20732` | day of the last password change, in days since 1 January 1970 |
+| min | `0` | minimum days between password changes |
+| max | `99999` | maximum days a password is valid (99999 = never expires) |
+| warn | `7` | days of warning before the password expires |
+| inactive, expire | empty | not set |
+
+- `!` as the hash (`tcpdump`): no usable password, nobody can log in as that account. Normal for system accounts.
+- `min`, `max` and `warn` are password aging, set with `chage`.
+
+#### User default settings
+
+![Manage User Default Settings](images/day-02-user-default-settings.png)
+
+The two parts that matter for the exam:
+
+- `/etc/login.defs` holds the defaults for new users, such as password aging (`PASS_MAX_DAYS`), UID ranges and whether a home directory is created. Changes only apply to users created afterwards.
+- `/etc/skel` is copied into every new home directory. Put a file there, and every new user gets it.
+
+#### Limiting user access
+
+![Limiting User Access](images/day-02-limiting-user-access.png)
+
+How these show up in the files:
+
+- `usermod -L anna` puts a `!` in front of anna's hash in `/etc/shadow`, the same idea as the `tcpdump` line. `-U` removes it again.
+- `usermod -e 2032-01-01 bill` fills the expire field in `/etc/shadow`. Check it with `chage -l bill`.
+- `usermod -s /sbin/nologin myapp` changes the last field (shell) in `/etc/passwd`. Many system accounts already have `/sbin/nologin` there.
+
+Check that anna is locked:
+
+```bash
+sudo usermod -L anna
+sudo passwd -S anna
+```
+
+`passwd -S` shows `LK` (locked) instead of `PS`.
+
+### Groups
+
+![Group Membership](images/day-02-group-membership.webp)
+
+The slide says `/etc/groups`, but the file is `/etc/group`.
+
+See a user's groups with `id`:
+
+```bash
+id gab
+id linda
+```
+
+```
+$ id gab
+uid=1000(gab) gid=1000(gab) groups=1000(gab),10(wheel)
+$ id linda
+uid=1002(linda) gid=1002(linda) groups=1002(linda)
+```
+
+- `gid=`: the primary group (field 4 of `/etc/passwd`)
+- `groups=`: all groups, including secondary ones (from `/etc/group`)
+- `gab` is also in `wheel` (`10(wheel)`): that's what gives full `sudo` access.
+- `linda` is only in her own group: her limited `sudo` rights come from the drop-in file in `/etc/sudoers.d`, not from a group.
+
+Add a user to a secondary group:
+
+```bash
+sudo groupadd support            # the group must exist first
+sudo usermod -aG support linda
+id linda
+```
+
+- `-G support`: set secondary group(s)
+- `-a`: append, keep the existing secondary groups
+- Without `-a`, `-G` replaces all secondary groups: `usermod -G support gab` would remove gab from `wheel` (and from `sudo`).
+- The new group only applies to new logins: linda must log out and back in (or use `newgrp support`).
+
+Check the group in `/etc/group`:
+
+```bash
+grep support /etc/group
+```
+
+Output like `support:x:1005:linda`. Fields: `name:password:GID:members`. The last field lists the secondary members, separated by commas.
+
+### Password settings
+
+![Manage Password Settings](images/day-02-password-settings.png)
+
+Password settings for existing users, with `chage` (changes the `min`, `max`, `warn` and `expire` fields in `/etc/shadow`):
+
+```bash
+sudo chage -l anna               # show anna's password settings
+sudo chage -M 90 anna            # password expires after 90 days
+sudo chage -d 0 anna             # force a new password at next login
+sudo chage -E 2032-01-01 anna    # account expires on 1 January 2032
+```
+
+For new users, the defaults come from `/etc/login.defs` (e.g. `PASS_MAX_DAYS`).
+
+### Lesson 9 lab: Managing Users and Groups
+
+![Lesson 9 lab: Managing Users and Groups](images/day-02-lesson-9-lab.webp)
