@@ -32,6 +32,8 @@
   - [Switching user with su](#switching-user-with-su)
   - [sudo](#sudo)
     - [sudo with composed commands](#sudo-with-composed-commands)
+  - [SSH](#ssh)
+  - [Lesson 8 lab: Configuring sudo](#lesson-8-lab-configuring-sudo)
 
 ---
 
@@ -602,3 +604,71 @@ echo hello | sudo tee /root/test.txt      # works: tee runs as root and writes t
 | `sudo cmd > ~/f` | you | `/home/gab` | `/home/gab/f`, owned by gab |
 | `sudo sh -c "cmd > ~/f"` | root | `/root` | `/root/f`, owned by root |
 | `cmd \| sudo tee /root/f` | root | — | `/root/f`, owned by root |
+
+### SSH
+
+Verify that SSH is running with `systemctl`, the main management command for systemd:
+
+```bash
+systemctl status sshd
+```
+
+Look for `active (running)`. The service is called `sshd` (SSH daemon).
+
+`scp` is part of SSH and copies files securely between hosts:
+
+```bash
+scp file.txt anna@rhcsa:/tmp/      # copy a local file to a remote host
+scp anna@rhcsa:/etc/hosts .        # copy a remote file to the current directory
+```
+
+The remote side is written `user@host:path`.
+
+### Lesson 8 lab: Configuring sudo
+
+![Lesson 8 lab: Configuring sudo](images/day-02-lesson-8-lab.png)
+
+My way:
+
+```
+sudo useradd linda
+sudo visudo
+linda ALL=/user/sbin/useradd, /user/sbin/usermod, /user/sbin/userdel, /user/bin/passwd, ! /user/bin/passwd
+Defaults timestamps_type=global,timestamp_timeout=60
+root
+sudo -i
+passwd linda
+exit
+su - linda
+sudo useradd johane
+```
+
+Mistakes:
+
+- `/user/...` should be `/usr/...`. sudo matches the full path exactly, so none of the rules match and `sudo useradd johane` is refused. Check paths with `which useradd`.
+- `timestamps_type` should be `timestamp_type`. `visudo` rejects unknown settings with a syntax error.
+- `root` must be on the same line: `! /usr/bin/passwd root`. On its own line it's a syntax error, and `! /usr/bin/passwd` alone blocks every use of `passwd`.
+
+Correct solution, in a drop-in file:
+
+```bash
+sudo useradd linda
+sudo passwd linda
+sudo visudo -f /etc/sudoers.d/linda
+```
+
+```
+linda ALL=/usr/sbin/useradd, /usr/sbin/usermod, /usr/sbin/userdel, /usr/bin/passwd, ! /usr/bin/passwd root
+Defaults timestamp_type=global,timestamp_timeout=60
+```
+
+Test as linda:
+
+```bash
+su - linda
+sudo useradd johane     # works
+sudo passwd johane      # works
+sudo passwd root        # refused
+```
+
+`sudo passwd linda` does the same as `sudo -i`, `passwd linda`, `exit` in one command.
