@@ -2,7 +2,7 @@
 
 My RHCSA (EX200) exam prep on **Red Hat Enterprise Linux 10**: lab setup, daily study notes, command cheat sheets and labs.
 
-> **Status:** 🟡 Just started (October 2026)
+> **Status:** 🟡 In progress: Module 3, Lesson 9 (October 2026)
 
 ---
 
@@ -27,8 +27,9 @@ Supporting resources:
 | Item     | Setup                                              |
 |----------|----------------------------------------------------|
 | Host     | Linux + VirtualBox                                 |
-| Guest OS | RHEL 10 (free Red Hat Developer Subscription)      |
-| VM       | 2 vCPU · 4 GB RAM · 20 GB system disk              |
+| Guest OS | RHEL 10.2, ISO from the free Red Hat Developer Subscription; system not registered (like the exam) |
+| VM       | 2 vCPU · 4 GB RAM · 20 GB system disk, BIOS firmware |
+| Disk layout | `sda1` biosboot 1 MiB · `sda2` `/` 10 GiB (xfs) · `sda3` swap 1 GiB · ~9 GiB unused (Lesson 2 lab) |
 
 ## Repository structure
 
@@ -36,8 +37,9 @@ Supporting resources:
 rhcsa-rhel10/
 ├── README.md          # this file: goal, plan, progress
 ├── notes/             # day-01.md … day-05.md, notes per study day
-├── cheatsheets/       # quick command references per topic
-└── labs/              # practice tasks + my solutions
+│   └── images/        # screenshots and course slides used in the notes
+├── cheatsheets/       # quick command references per topic (planned)
+└── labs/              # practice tasks + my solutions (planned)
 ```
 
 ## Study plan
@@ -46,8 +48,8 @@ Five intensive study days within the O'Reilly 10-day trial, plus review time.
 
 | Day | Date | Course lessons | Notes | Done |
 |-----|------|----------------|-------|------|
-| 1   |      |                | [day-01](notes/day-01.md) | ⬜ |
-| 2   |      |                | [day-02](notes/day-02.md) | ⬜ |
+| 1   | 2026-10-05 – 06 | Modules 1–2, lessons 1–5: RHEL, installation, basic tasks, essential tools, bash | [day-01](notes/day-01.md) | ✅ |
+| 2   | 2026-10-06 – 09 | Module 3, lessons 6–9: file management, text files, root/sudo, users and groups | [day-02](notes/day-02.md) | 🟡 |
 | 3   |      |                | [day-03](notes/day-03.md) | ⬜ |
 | 4   |      |                | [day-04](notes/day-04.md) | ⬜ |
 | 5   |      |                | [day-05](notes/day-05.md) | ⬜ |
@@ -71,6 +73,8 @@ High-level areas covered by the RHCSA. Check them against the official objective
 
 ## Cheat sheets
 
+_Planned, not written yet._
+
 | Topic | File |
 |-------|------|
 | LVM | [cheatsheets/lvm.md](cheatsheets/lvm.md) |
@@ -81,14 +85,28 @@ High-level areas covered by the RHCSA. Check them against the official objective
 
 ## Lab log
 
-| # | Lab | Result | Time | Notes |
-|---|-----|--------|------|-------|
-|   |     |        |      |       |
+| # | Lab | Result | Notes |
+|---|-----|--------|-------|
+| 2 | Installing RHEL | ✅ | Custom partitioning; needed a biosboot partition on a BIOS VM |
+| 4 | Using essential tools | ✅ | man, useradd, passwd, vim |
+| 5 | Using the bash shell | ✅ | Variable in `~/.bash_profile`, alias in `~/.bashrc`, `HISTFILESIZE` |
+| 6 | Essential file management tools | ✅ | `tar -czf`, symlink in `/tmp`, broken link after removing the archive |
+| 7 | Working with text files | ✅ | Fixed tasks 4–5: `grep -w`, no `-l` when lines are asked |
+| 8 | Configuring sudo | ✅ | First try had wrong paths (`/user`) and a typo in `timestamp_type` |
+| 9 | Managing users and groups | ⬜ | |
 
 ## 💡 Lessons learned
 
 _Mistakes and things I'd do differently. Filled in as I go._
 
+- A GPT disk needs a boot partition: `biosboot` (1 MiB) on BIOS, `/boot/efi` on UEFI.
+- In `tar`, `f` goes last (`-czf`): it takes the next word as the file name.
+- Use absolute targets for symlinks; relative ones resolve from the link's location.
+- `sudo cmd > file`: the redirection is done by my shell, not by root. Use `sudo sh -c "..."` or `tee`.
+- `usermod -G` without `-a` removes all other secondary groups.
+- sudoers rules need exact full paths (`/usr/sbin/...`); check with `which`.
+- `2>/dev/null` also hides my own syntax errors (missing `\;` in `find -exec`).
+
 ---
 
-⚠️ This repo has only my own notes and solutions. No course material, no ISOs, no credentials.
+⚠️ This repo has my own notes and solutions, plus screenshots of course slides for personal study reference. No ISOs. The only passwords shown are throwaway ones from the lab VM.
