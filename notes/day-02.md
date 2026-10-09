@@ -28,6 +28,10 @@
     - [Task 4: Files in /etc with "root" as a word](#task-4-files-in-etc-with-root-as-a-word)
     - [Task 5: Lines in /etc files with exactly 3 characters](#task-5-lines-in-etc-files-with-exactly-3-characters)
     - [Task 6: Files with "alex" but not "alexander"](#task-6-files-with-alex-but-not-alexander)
+  - [Root user](#root-user)
+  - [Switching user with su](#switching-user-with-su)
+  - [sudo](#sudo)
+    - [sudo with composed commands](#sudo-with-composed-commands)
 
 ---
 
@@ -517,3 +521,84 @@ alex
 - `echo -e` interprets `\n` as a new line.
 - `sed -i '1d' users` deletes the wrong first line.
 - `grep 'alex\b' users` matches `alex` but not `alexander`.
+
+### Root user
+
+- From a security perspective, it may be a good idea not to have an active root user (the installer's **Disable root account** option). Admin users in the `wheel` group use `sudo` instead.
+- Remote root login using Secure Shell (SSH) can be allowed or not (`PermitRootLogin` in `/etc/ssh/sshd_config`, or the installer's **Allow root SSH login with password** option).
+- Better avoid working as root: use an admin user account instead, and run admin commands with `sudo`.
+
+### Switching user with su
+
+There are two ways to work as the root user: `su -` and `sudo -i`.
+
+- `su` switches the current user account from a shell. Useful for testing the users you've created.
+- `su -` loads the complete environment of the target user. Always use `su` with `-`, so all environment variables are set the right way.
+- Using `su -` to open a root shell is considered bad practice. Use `sudo -i` instead.
+
+```bash
+su - anna      # switch to anna (asks for anna's password)
+sudo -i        # root shell (asks for your own password)
+exit           # go back to your own user
+```
+
+`su -` to root needs the root password (and an enabled root account). `sudo -i` uses your own password, so it works when root is disabled, and every use is logged.
+
+### sudo
+
+The real way to perform admin tasks is `sudo`. Behind it is a detailed configuration maintained in `/etc/sudoers`. By editing `/etc/sudoers` through `visudo`, very detailed admin privileges can be assigned.
+
+```bash
+sudo visudo
+```
+
+- Always use `visudo`, never edit `/etc/sudoers` directly: it checks the syntax before saving, so a typo can't lock you out of `sudo`.
+
+![Exploring /etc/sudoers](images/day-02-exploring-sudoers.png)
+
+Create or edit a drop-in file, also through `visudo`:
+
+```bash
+sudo visudo -f /etc/sudoers.d/anna
+```
+
+![Providing Administrator Access](images/day-02-providing-admin-access.webp)
+
+![Providing Access to Specific Tasks](images/day-02-access-specific-tasks.png)
+
+Example in a sudoers file: linda can change any user's password, except root's:
+
+![sudoers rule for linda](images/day-02-sudoers-linda-passwd.png)
+
+```
+linda   ALL=/usr/bin/passwd, ! /usr/bin/passwd root
+```
+
+- `/usr/bin/passwd`: linda may run `passwd` as root with any arguments, so she can change (and lock or delete) the password of every user
+- `! /usr/bin/passwd root`: except exactly `passwd root` (`!` means "not")
+- Limit: `!` only blocks that exact command line. `sudo passwd -d root` (delete root's password) still matches the first rule, so negations in sudoers are not a real security barrier.
+
+#### sudo with composed commands
+
+Running composed commands (redirections, pipes) with `sudo` can be complex. The key question: **who opens the file for writing, your shell or root?**
+
+```bash
+sudo ls /root > ~/output.txt
+sudo sh -c "ls /root > ~/output.txt"
+```
+
+- `sudo ls /root > ~/output.txt`: your shell handles `~` and `>` before `sudo` runs. `ls` runs as root, but the file is written by you to `/home/gab/output.txt`, owned by gab.
+- `sudo sh -c "ls /root > ~/output.txt"`: the whole string runs in a root shell. `~` (inside double quotes, not expanded by your shell) becomes `/root`, so the file is `/root/output.txt`, owned by root.
+
+The classic trap:
+
+```bash
+sudo echo hello > /root/test.txt          # Permission denied: your shell does the redirection
+echo hello | sudo tee /root/test.txt      # works: tee runs as root and writes the file
+```
+
+| Command | Who writes the file | `~` is | Result |
+|---------|--------------------|--------|--------|
+| `sudo cmd > ~/f` | you | `/home/gab` | `/home/gab/f`, owned by gab |
+| `sudo sh -c "cmd > ~/f"` | root | `/root` | `/root/f`, owned by root |
+| `cmd \| sudo tee /root/f` | root | — | `/root/f`, owned by root |
