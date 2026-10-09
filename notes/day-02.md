@@ -13,6 +13,13 @@
   - [Lesson 6 lab: Using Essential File Management Tools](#lesson-6-lab-using-essential-file-management-tools)
     - [Task 1: Compressed archive of /etc and /opt in the home directory](#task-1-compressed-archive-of-etc-and-opt-in-the-home-directory)
     - [Task 2: Symbolic link to the archive in /tmp](#task-2-symbolic-link-to-the-archive-in-tmp)
+    - [Task 3](#task-3)
+  - [Viewing file contents](#viewing-file-contents)
+  - [cut](#cut)
+  - [sort](#sort)
+  - [tr](#tr)
+  - [grep](#grep)
+  - [Regular expressions (basics)](#regular-expressions-basics)
 
 ---
 
@@ -234,3 +241,173 @@ ls -l /tmp/rtc-opt.tar.gz
 ```bash
 rm etc-opt.tar.gz
 ```
+
+### Viewing file contents
+
+```bash
+cat /etc/passwd    # print the whole file
+tac /etc/passwd    # print the whole file, last line first
+less /etc/passwd   # page through the file
+more /etc/passwd   # page through the file (older, simpler)
+```
+
+- `cat`: best for short files; long files scroll past the screen.
+  - `cat -A`: also shows hidden characters: `$` at each line end, `^I` for tabs. Useful to find stray spaces or tabs in config files.
+- `tac`: `cat` backwards. Useful to see the newest entries of a file first.
+- `less`: scroll up and down with the arrow keys, search with `/`, quit with `q` (same keys as man pages, which use `less`).
+- `more`: only scrolls forward and quits at the end of the file. Use `less` instead.
+
+Search inside `less` (for example after `less /etc/passwd`):
+
+- `/word`: search forward for *word*, then Enter. No space after `/`, or the space becomes part of the search.
+
+### cut
+
+`cut` prints selected fields (columns) from each line:
+
+```bash
+cat /etc/passwd
+cut -d : -f 1 /etc/passwd
+```
+
+- `cat /etc/passwd`: full lines, such as `anna:x:1002:1002::/home/anna:/bin/bash`
+- `cut -d : -f 1`: only field 1 of each line, the user names
+  - `-d :`: the delimiter (field separator) is `:`
+  - `-f 1`: which field to print; several with `-f 1,7` (name and shell)
+
+Sort the user names alphabetically by piping to `sort`:
+
+```bash
+cut -d : -f 1 /etc/passwd | sort
+```
+
+### sort
+
+Sort `/etc/passwd` by UID (field 3), as numbers:
+
+```bash
+sort -t : -k3n /etc/passwd
+```
+
+- `-t :`: the field separator is `:` (like `cut -d`)
+- `-k3`: sort by field 3 (the UID)
+- `n`: sort numerically, so `1000` comes after `999` (alphabetically, `1000` would come before `999`)
+- Add `r` (`-k3nr`) to reverse: highest UID first
+
+### tr
+
+`tr` translates (replaces) characters. Convert lowercase to uppercase:
+
+```bash
+echo hello | tr '[:lower:]' '[:upper:]'
+```
+
+Output: `HELLO`. `[:lower:]` and `[:upper:]` are character classes (all lowercase / all uppercase letters). Quote them: unquoted, the shell can expand `[...]` as a file name pattern if a matching one-letter file exists.
+
+### grep
+
+`grep` filters lines that contain a text. Find the SSH processes:
+
+```bash
+ps aux | grep ssh
+```
+
+- `ps aux`: lists all running processes
+- `grep ssh`: keeps only the lines containing `ssh`
+
+The output also includes the `grep ssh` process itself. To hide it, use `ps aux | grep '[s]sh'`, or use `pgrep -a ssh`.
+
+`ps faux` is `ps aux` plus `f` (forest): it shows processes as a tree, so you can see which process started which (e.g. `sshd` → your login shell → `ps`).
+
+```bash
+ps faux
+```
+
+Show context around each match with `-B` (before) and `-A` (after):
+
+```bash
+ps faux | grep -B5 bash
+```
+
+- `-B5`: also print the 5 lines **before** each match. In the tree, those are the parent processes that started `bash`.
+- `-A5`: 5 lines **after** each match.
+- `-C5`: 5 lines before and after.
+
+`ps faux | grep -B5 bash` is noisy: `bash` matches every shell, and `-B5` adds 5 lines per match. To see only the chain of processes that leads to your current shell:
+
+```bash
+pstree -s $$
+```
+
+- `$$`: the PID of the current shell
+- `-s`: show the parents of that process
+
+Output is one line, e.g. `systemd───gnome-terminal───bash───pstree`.
+
+Search all files in a directory for a text:
+
+```bash
+cd /etc
+grep <username> * 2>/dev/null
+```
+
+- `*`: every file in the current directory (not subdirectories)
+- `2>/dev/null`: hides errors such as `Is a directory` and `Permission denied`
+- Shows the files that mention the user, such as `passwd`, `group` and `subgid`
+- Add `-r` to search subdirectories too, and `-l` to print only the file names: `grep -rl <username> /etc 2>/dev/null`
+
+Search every directory and subdirectory, starting from `/`:
+
+```bash
+sudo grep -rl <word> / 2>/dev/null
+```
+
+- `-r`: recursive (every subdirectory)
+- `-l`: print only file names
+- `sudo`: read files only root can open
+
+Searching all of `/` is slow and can hang on `/proc`, `/sys` and `/dev` (kernel and device interfaces, not real files). Skip them, and skip binary files:
+
+```bash
+sudo grep -rlI <word> / --exclude-dir={proc,sys,dev,run} 2>/dev/null
+```
+
+- `--exclude-dir={proc,sys,dev,run}`: skip these virtual directories
+- `-I`: skip binary files (faster, no "binary file matches" noise)
+
+Case-insensitive search with context, e.g. find the root login settings in the SSH server config:
+
+```bash
+sudo grep -i root -A5 /etc/ssh/sshd_config
+```
+
+- `-i`: ignore case, so it matches `root`, `Root` and `PermitRootLogin`
+- `-A5`: also print the 5 lines after each match
+- `sudo`: `sshd_config` is readable only by root
+
+On RHEL 10, SSH settings can also be in drop-in files under `/etc/ssh/sshd_config.d/` (e.g. the installer's *Allow root SSH login with password* option). Search both:
+
+```bash
+sudo grep -ri root /etc/ssh/sshd_config /etc/ssh/sshd_config.d/
+```
+
+### Regular expressions (basics)
+
+![Regular Expressions slide](images/day-02-regular-expressions.jpg)
+
+Not on the slide:
+
+| Symbol | Meaning | Example |
+|--------|---------|---------|
+| `[ ]` | one of these characters | `grep '[0-9]'` |
+| `-v` | invert: lines that don't match | `grep -v '^#'` |
+
+Show a config file without comments and empty lines:
+
+```bash
+grep -v -e '^#' -e '^$' /etc/ssh/sshd_config
+```
+
+Always quote the pattern. In regex, "anything" is `.*`, not `*`.
+
+`-E` enables extended regex, needed for `+`, `?` and `|`. Without it, `{3}` must be written `\{3\}`.
