@@ -20,6 +20,14 @@
   - [tr](#tr)
   - [grep](#grep)
   - [Regular expressions (basics)](#regular-expressions-basics)
+  - [sed](#sed)
+  - [Lesson 7 lab: Working with Text Files](#lesson-7-lab-working-with-text-files)
+    - [Task 1: Line 5 of /etc/passwd with head and tail](#task-1-line-5-of-etcpasswd-with-head-and-tail)
+    - [Task 2: Line 5 of /etc/passwd with sed](#task-2-line-5-of-etcpasswd-with-sed)
+    - [Task 3: Last column of ps aux with awk](#task-3-last-column-of-ps-aux-with-awk)
+    - [Task 4: Files in /etc with "root" as a word](#task-4-files-in-etc-with-root-as-a-word)
+    - [Task 5: Lines in /etc files with exactly 3 characters](#task-5-lines-in-etc-files-with-exactly-3-characters)
+    - [Task 6: Files with "alex" but not "alexander"](#task-6-files-with-alex-but-not-alexander)
 
 ---
 
@@ -411,3 +419,101 @@ grep -v -e '^#' -e '^$' /etc/ssh/sshd_config
 Always quote the pattern. In regex, "anything" is `.*`, not `*`.
 
 `-E` enables extended regex, needed for `+`, `?` and `|`. Without it, `{3}` must be written `\{3\}`.
+
+### sed
+
+`sed` (stream editor) edits text files from the command line, without opening an editor.
+
+```bash
+sed -n 5p /etc/passwd                 # print only line 5
+sed 's/anna/lisa/g' myfile            # replace anna with lisa (shows result, file unchanged)
+sed -i 's/anna/lisa/g' myfile         # same, but edit the file itself
+sed -i -e '2d' myfile                 # delete line 2 from the file
+```
+
+- `-n ... p`: print only the selected lines (without `-n`, every line is printed too)
+- `s/old/new/`: substitute; `g` at the end replaces every match on a line, not just the first
+- `-i`: in-place, changes the file. Test without `-i` first.
+- `d`: delete the line
+
+### Lesson 7 lab: Working with Text Files
+
+![Lesson 7 lab: Working with Text Files](images/day-02-lesson-7-lab.png)
+
+#### Task 1: Line 5 of /etc/passwd with head and tail
+
+```bash
+head -5 /etc/passwd | tail -1
+head /etc/passwd --lines=5 | tail --lines=1
+```
+
+`head -5` keeps the first 5 lines; `tail -1` keeps the last of those.
+
+#### Task 2: Line 5 of /etc/passwd with sed
+
+```bash
+sed -n 5p /etc/passwd
+```
+
+#### Task 3: Last column of ps aux with awk
+
+```bash
+ps aux | awk '{ print $NF }'
+```
+
+`NF` is the number of fields in the line, so `$NF` is the last field. Documented in `man awk` (search `/Built-in Variables`).
+
+#### Task 4: Files in /etc with "root" as a word
+
+```bash
+grep -lw root /etc/* 2>/dev/null
+```
+
+- `-l`: file names only
+- `-w`: whole word (same as `'\broot\b'`), so `rootfs` and `chroot` don't match
+
+My first try `grep -l 'root' * /etc/*` missed "as a word" and also searched the current directory (`*`).
+
+#### Task 5: Lines in /etc files with exactly 3 characters
+
+```bash
+grep '^...$' /etc/* 2>/dev/null
+```
+
+`^...$`: start, any 3 characters, end. No `-l`, because the task asks for the lines, not the file names.
+
+#### Task 6: Files with "alex" but not "alexander"
+
+```bash
+grep -l '\balex\b' /etc/* 2>/dev/null
+```
+
+`\b` on both sides (or `-w alex`) matches only the whole word `alex`.
+
+My way, testing it on a file:
+
+```
+$ echo "alex\nalexander\nlinda\nbelinda" >> users
+$ cat users
+alex\nalexander\nlinda\nbelinda
+$ echo -e "alex\nalexander\nlinda\nbelinda" >> users
+$ cat users
+alex\nalexander\nlinda\nbelinda
+alex
+alexander
+linda
+belinda
+$ sed -i '1d' users
+$ cat users
+alex
+alexander
+linda
+belinda
+$ grep 'alex\b' users
+alex
+```
+
+- Without `-e`, `echo` writes `\n` literally instead of new lines.
+- `echo -e` interprets `\n` as a new line.
+- `sed -i '1d' users` deletes the wrong first line.
+- `grep 'alex\b' users` matches `alex` but not `alexander`.
