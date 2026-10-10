@@ -46,6 +46,13 @@
     - [Task 3: Create users anna, anouk, linda and lisa](#task-3-create-users-anna-anouk-linda-and-lisa)
     - [Task 4: Set passwords for anna and anouk, disable them for linda and lisa](#task-4-set-passwords-for-anna-and-anouk-disable-them-for-linda-and-lisa)
     - [Task 5: Groups profs and students](#task-5-groups-profs-and-students)
+  - [File ownership](#file-ownership)
+    - [Changing file ownership](#changing-file-ownership)
+  - [Permissions](#permissions)
+    - [Special X](#special-x)
+    - [umask](#umask)
+    - [Shared group directories](#shared-group-directories)
+  - [Lesson 10 lab: Managing Permissions](#lesson-10-lab-managing-permissions)
 
 ---
 
@@ -924,3 +931,124 @@ students:x:1007:linda,lisa
 - `groupdel` removes a group (fix for the `student` typo).
 - `grep -E 'profs|students'`: `|` means "or" in extended regex.
 - The last field lists the secondary members: anna and anouk in `profs`, linda and lisa in `students`.
+
+### File ownership
+
+![File Ownership](images/day-02-file-ownership.png)
+
+"Permissions are not additive": Linux checks in this order and stops at the first match:
+
+1. Are you the **user-owner**? You get the owner permissions, nothing else is checked.
+2. Otherwise, are you in the **group-owner**? You get the group permissions.
+3. Otherwise, you get the **others** permissions.
+
+Example: a file with `-r--rw-rw-` that you own: you **can't write** to it, even though group and others can. You only get the owner's `r--`.
+
+Reading `ls -l`:
+
+```
+-rw-r--r--. 1 gab gab 30 Oct 6 users
+ └┬┘└┬┘└┬┘    └┬┘ └┬┘
+  u  g  o    owner group
+```
+
+#### Changing file ownership
+
+- `chown user[:group] file`: set the user-owner (and optionally the group-owner)
+- `chgrp group file`: set the group-owner
+
+```bash
+sudo chown anna users            # user-owner becomes anna
+sudo chown anna:profs users      # user-owner anna, group-owner profs
+sudo chgrp students users        # group-owner becomes students
+```
+
+Add `-R` to change a directory and everything in it.
+
+### Permissions
+
+| Permission | Value | On a file | On a directory |
+|------------|-------|-----------|----------------|
+| read (`r`) | 4 | open the file | list the files |
+| write (`w`) | 2 | modify the file | add and delete files |
+| execute (`x`) | 1 | run the file | `cd` into the directory |
+
+Change permissions with `chmod`:
+
+```bash
+chmod 750 myfile      # u=rwx (4+2+1), g=r-x (4+1), o=--- (0)
+chmod g+w myfile      # add write for the group
+chmod o-r myfile      # remove read for others
+```
+
+- Numeric (absolute): one digit per entity, in the order user, group, others. Add the values: `rw-` = 4+2 = 6.
+- Symbolic (relative): `u`, `g`, `o` (or `a` for all), then `+`, `-` or `=`, then `r`, `w`, `x`.
+
+#### Special X
+
+![Special X](images/day-02-special-x.png)
+
+```bash
+chmod -R o+X /data      # dirs get x; files only if they already have x somewhere
+chmod -R o+x /data      # every file becomes executable too (usually wrong)
+```
+
+Testing `x` vs `X`:
+
+```
+~/data$ cd files/
+~/data/files$ touch files{1..4}
+~/data/files$ ls -l
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files1
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files2
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files3
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files4
+~/data/files$ cd ..
+~/data$ chmod -R +x files/
+~/data$ ls -l files/
+-rwxr-xr-x 1 user user 0 Oct 10 19:44 files1
+-rwxr-xr-x 1 user user 0 Oct 10 19:44 files2
+-rwxr-xr-x 1 user user 0 Oct 10 19:44 files3
+-rwxr-xr-x 1 user user 0 Oct 10 19:44 files4
+~/data$ chmod -x files/*
+~/data$ ls -l files/
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files1
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files2
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files3
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files4
+~/data$ chmod -R +X files/
+~/data$ ls -l files/
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files1
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files2
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files3
+-rw-r--r-- 1 user user 0 Oct 10 19:44 files4
+```
+
+- `touch files{1..4}`: brace expansion creates `files1` to `files4`.
+- `chmod -R +x`: every file became executable.
+- `chmod -x files/*`: removed `x` from the files again (not from the directory).
+- `chmod -R +X`: the files stayed without `x`, because none of them had `x` anywhere. Only the directory `files/` gets (keeps) `x`.
+
+#### umask
+
+![Understand umask](images/day-02-umask.png)
+
+How the subtraction works, digit by digit:
+
+| | Files | Directories |
+|---|---|---|
+| Default | 666 | 777 |
+| umask 022 | − 022 | − 022 |
+| Result | **644** (`rw-r--r--`) | **755** (`rwxr-xr-x`) |
+
+Files start at 666, not 777, so new files are never executable. You always add `x` yourself with `chmod`.
+
+#### Shared group directories
+
+![Understanding Shared Group Directories](images/day-02-shared-group-directories.webp)
+
+![Applying Shared Group Permissions](images/day-02-applying-shared-group-permissions.png)
+
+### Lesson 10 lab: Managing Permissions
+
+![Lesson 10 lab: Managing Permissions](images/day-02-lesson-10-lab.png)
