@@ -41,6 +41,11 @@
   - [Groups](#groups)
   - [Password settings](#password-settings)
   - [Lesson 9 lab: Managing Users and Groups](#lesson-9-lab-managing-users-and-groups)
+    - [Task 1: New users require a password with a maximal validity of 90 days](#task-1-new-users-require-a-password-with-a-maximal-validity-of-90-days)
+    - [Task 2: Create an empty file newfile in every new user's home directory](#task-2-create-an-empty-file-newfile-in-every-new-users-home-directory)
+    - [Task 3: Create users anna, anouk, linda and lisa](#task-3-create-users-anna-anouk-linda-and-lisa)
+    - [Task 4: Set passwords for anna and anouk, disable them for linda and lisa](#task-4-set-passwords-for-anna-and-anouk-disable-them-for-linda-and-lisa)
+    - [Task 5: Groups profs and students](#task-5-groups-profs-and-students)
 
 ---
 
@@ -291,7 +296,7 @@ cat /etc/passwd
 cut -d : -f 1 /etc/passwd
 ```
 
-- `cat /etc/passwd`: full lines, such as `anna:x:1002:1002::/home/anna:/bin/bash`
+- `cat /etc/passwd`: full lines, such as `anna:x:1001:1001::/home/anna:/bin/bash`
 - `cut -d : -f 1`: only field 1 of each line, the user names
   - `-d :`: the delimiter (field separator) is `:`
   - `-f 1`: which field to print; several with `-f 1,7` (name and shell)
@@ -669,7 +674,7 @@ A user is a security principle: user accounts are used to give people or process
 The slide's properties are the same seven fields as a line in `/etc/passwd`, in the same order:
 
 ```
-anna:x:1002:1002::/home/anna:/bin/bash
+anna:x:1001:1001::/home/anna:/bin/bash
 name:password:UID:GID:GECOS:home:shell
 ```
 
@@ -795,3 +800,119 @@ For new users, the defaults come from `/etc/login.defs` (e.g. `PASS_MAX_DAYS`).
 ### Lesson 9 lab: Managing Users and Groups
 
 ![Lesson 9 lab: Managing Users and Groups](images/day-02-lesson-9-lab.webp)
+
+List only real human users (filter out system daemons). Most Linux distributions give normal user accounts a UID of 1000 or higher:
+
+```bash
+awk -F: '$3 >= 1000 && $3 != 65534 {print $1, "UID:" $3}' /etc/passwd
+```
+
+```
+gab UID:1000
+anna UID:1001
+linda UID:1002
+johane UID:1003
+```
+
+- `-F:`: fields are separated by `:`
+- `$3 >= 1000`: field 3 (the UID) is 1000 or higher
+- `$3 != 65534`: skip `nobody` (UID 65534), a system account with a high UID
+- `{print $1, "UID:" $3}`: print the name and the UID
+
+Maximum password validity of 90 days for anna, an existing user:
+
+```bash
+sudo chage -l anna
+sudo chage -M 90 anna
+sudo chage -l anna
+```
+
+![chage -M 90 anna](images/day-02-lesson-9-chage-anna.png)
+
+- Before: `Maximum number of days between password change : 99999`, `Password expires : never`
+- After: `Maximum ... : 90`, `Password expires : Jan 04, 2027` (last change Oct 06, 2026 + 90 days)
+- `chage` only changes existing users. For **new** users (what task 1 asks), set `PASS_MAX_DAYS 90` in `/etc/login.defs` before creating them.
+
+#### Task 1: New users require a password with a maximal validity of 90 days
+
+In `/etc/login.defs`, change `PASS_MAX_DAYS 99999` to `PASS_MAX_DAYS 90`, then create a new user and check it:
+
+```bash
+sudo vim /etc/login.defs
+sudo useradd anouk
+sudo chage -l anouk
+```
+
+![login.defs PASS_MAX_DAYS 90, chage -l anouk](images/day-02-lesson-9-login-defs.png)
+
+`Maximum number of days between password change : 90` and `Password expires : Jan 08, 2027`: the new user got the 90 days from `/etc/login.defs`.
+
+#### Task 2: Create an empty file newfile in every new user's home directory
+
+![/etc/skel/newfile copied to anouk's home](images/day-02-lesson-9-skel.png)
+
+`/etc/skel` ("skeleton") is the template for new home directories. When `useradd` creates a user, it copies everything in `/etc/skel` into the new home directory, owned by the new user.
+
+- `ls /etc/skel/` looked empty at first, but it already has hidden files (`.bashrc`, `.bash_profile`, `.bash_logout`): see them with `ls -a /etc/skel`. That's where every user's bash files come from.
+- It only works at creation time: existing users don't get new files. That's why `anouk` was removed (`userdel -r`, which also deletes the home directory) and created again.
+
+#### Task 3: Create users anna, anouk, linda and lisa
+
+`anna`, `anouk` and `linda` already exist, so only `lisa` is new:
+
+```bash
+sudo useradd lisa
+```
+
+`lisa` gets the 90-day password limit and `newfile` automatically. `anna` and `linda` were created before tasks 1 and 2, so they don't have them.
+
+#### Task 4: Set passwords for anna and anouk, disable them for linda and lisa
+
+```bash
+sudo passwd anouk
+sudo passwd anna
+```
+
+![passwd anouk and anna](images/day-02-lesson-9-passwd.png)
+
+`BAD PASSWORD` is only a warning: as root, the password is set anyway.
+
+Disable (lock) the passwords for linda and lisa, then check:
+
+```bash
+sudo passwd -l linda
+sudo passwd -l lisa
+sudo passwd -S linda
+sudo passwd -S lisa
+```
+
+![passwd -l and passwd -S for linda and lisa](images/day-02-lesson-9-passwd-lock.png)
+
+- `passwd -l` does the same as `usermod -L`: puts `!` in front of the hash in `/etc/shadow`.
+- `passwd -S` fields: name, status (`L` locked, `P` password set, `NP` no password), last change, min, max, warn, inactive.
+- `linda` shows max `99999`, `lisa` shows `90`: lisa was created after `PASS_MAX_DAYS 90`, linda before.
+
+#### Task 5: Groups profs and students
+
+```bash
+sudo groupadd profs
+sudo groupadd student          # typo: should be students
+sudo groupdel student          # remove the wrong group
+sudo groupadd students
+sudo usermod -aG profs anna
+sudo usermod -aG profs anouk
+sudo usermod -aG students linda
+sudo usermod -aG students lisa
+grep -E 'profs|students' /etc/group
+```
+
+![groupadd, usermod -aG and /etc/group](images/day-02-lesson-9-groups.png)
+
+```
+profs:x:1006:anna,anouk
+students:x:1007:linda,lisa
+```
+
+- `groupdel` removes a group (fix for the `student` typo).
+- `grep -E 'profs|students'`: `|` means "or" in extended regex.
+- The last field lists the secondary members: anna and anouk in `profs`, linda and lisa in `students`.
