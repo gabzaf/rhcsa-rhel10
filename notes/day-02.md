@@ -892,6 +892,14 @@ sudo passwd -S lisa
 - `passwd -S` fields: name, status (`L` locked, `P` password set, `NP` no password), last change, min, max, warn, inactive.
 - `linda` shows max `99999`, `lisa` shows `90`: lisa was created after `PASS_MAX_DAYS 90`, linda before.
 
+See the lock in `/etc/shadow`:
+
+```bash
+sudo grep linda /etc/shadow
+```
+
+The hash now starts with `!` (e.g. `linda:!$y$j9T$...:20735:0:99999:7:::`). Unlocking (`passwd -u` or `usermod -U`) removes the `!`, and the old password works again.
+
 #### Task 5: Groups profs and students
 
 ```bash
