@@ -1049,6 +1049,64 @@ Files start at 666, not 777, so new files are never executable. You always add `
 
 ![Applying Shared Group Permissions](images/day-02-applying-shared-group-permissions.png)
 
+| Permission | Command | Effect | `ls -l` shows |
+|------------|---------|--------|---------------|
+| SGID | `chmod g+s mydir` | new files in `mydir` get the directory's group, not the creator's primary group | `s` in the group's `x` spot: `drwxrws---` |
+| Sticky bit | `chmod +t mydir` | users can only delete their own files in `mydir` (like `/tmp`) | `t` in the others' `x` spot: `drwxrwx--T` |
+| SUID | `chmod u+s file` | the program runs with the owner's permissions (like `/usr/bin/passwd`) | `s` in the user's `x` spot: `-rwsr-xr-x` |
+
+- `g+s` = add (`+`) the `s` bit for the group (`g`). `+t` = add the sticky bit (no `u`/`g`/`o` needed).
+- Numeric: special permissions are the first of 4 digits: SUID = 4, SGID = 2, sticky = 1. `chmod 3770 mydir` = SGID + sticky (2+1) and `rwxrwx---`.
+- Uppercase `S` or `T` means the special bit is set but the `x` underneath is not.
+
+First, something about a permission I will never use:
+
+```bash
+sudo find / -perm /4000 2>/dev/null
+```
+
+![find / -perm /4000 2>/dev/null](images/day-02-find-suid-clean.png)
+
+I ran the command above to find files that have the Set User ID (SUID) permission. What does it mean? The files in the output take the permissions of the user-owner of the file (mostly root) while being executed, and this is very dangerous if it's used the wrong way.
+
+- `-perm /4000`: match files that have the SUID bit (4 in the special digit), whatever the other permissions are.
+- `2>/dev/null`: hides the `No such file or directory` and `Permission denied` errors from `/proc` and `/run` (they change while `find` runs).
+- These are normal SUID programs: `passwd`, `su`, `sudo`, `mount` need root rights even when a regular user runs them.
+
+```bash
+ls -l /usr/bin/passwd
+```
+
+![ls -l /usr/bin/passwd](images/day-02-ls-passwd-suid.png)
+
+- `-rwsr-xr-x`: the `s` in the user's `x` spot is SUID.
+- Owner `root`: if an ordinary user runs the `passwd` command, the user temporarily has root permissions. That's needed because the new password must be written to `/etc/shadow`, which only root can write.
+- The file itself, `/usr/bin/passwd`, is marked in red: the shell's way to indicate that something potentially dangerous is going on here.
+
 ### Lesson 10 lab: Managing Permissions
 
 ![Lesson 10 lab: Managing Permissions](images/day-02-lesson-10-lab.png)
+
+My way:
+
+```bash
+sudo mkdir -p /data/profs /data/students
+ls -l /data
+man chgrp
+sudo chgrp profs profs           # run from /data
+sudo chgrp students students
+sudo chmod 770 *                 # members of the group: full access, others: nothing
+sudo find / -perm /4000 2>/dev/null
+```
+
+- `mkdir -p`: also creates `/data` if it doesn't exist.
+- `chgrp profs profs` uses relative paths, so it only works when the current directory is `/data`. Absolute paths are safer: `sudo chgrp profs /data/profs`.
+- `chmod 770 *`: in `/data`, `*` is `profs` and `students`. `rwx` for owner (root) and group, nothing for others.
+- Missing for a *shared* group directory: SGID, so new files get the directory's group (otherwise a file anna creates belongs to group `anna`, and anouk can't edit it):
+
+  ```bash
+  sudo chmod 2770 /data/profs /data/students
+  ls -ld /data/profs /data/students     # drwxrws--- root profs / root students
+  ```
+
+- `find / -perm /4000 2>/dev/null`: lists the SUID files (task 2).
