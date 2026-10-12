@@ -48,8 +48,8 @@ Five intensive study days within the O'Reilly 10-day trial, plus review time.
 
 | Day | Date | Course lessons | Notes | Done |
 |-----|------|----------------|-------|------|
-| 1   | 2026-10-05 – 06 | Modules 1–2, lessons 1–5: RHEL, installation, basic tasks, essential tools, bash | [day-01](notes/day-01.md) | ✅ |
-| 2   | 2026-10-06 – 09 | Module 3, lessons 6–9: file management, text files, root/sudo, users and groups | [day-02](notes/day-02.md) | 🟡 |
+| 1   | 2026-10-05 | Modules 1–2, lessons 1–5: RHEL, installation, basic tasks, essential tools, bash | [day-01](notes/day-01.md) | ✅ |
+| 2   | 2026-10-06 | Module 3, lessons 6–9: file management, text files, root/sudo, users and groups | [day-02](notes/day-02.md) | 🟡 |
 | 3   |      |                | [day-03](notes/day-03.md) | ⬜ |
 | 4   |      |                | [day-04](notes/day-04.md) | ⬜ |
 | 5   |      |                | [day-05](notes/day-05.md) | ⬜ |
